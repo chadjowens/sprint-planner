@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/*
+  DESIGN SYSTEM: "Terminal Aesthetic" — Monospace Command Center
+  - Base: Dark charcoal (#0D1117)
+  - Surface: Elevated dark (#161B22)
+  - Border: Subtle gray (#30363D)
+  - Text: Light gray (#E6EDF3)
+  - Muted: Medium gray (#8B949E)
+  - Accent: Cyan (#58A6FF)
+  - Priority: P0 red (#F85149), P1 amber (#D29922), P2 cyan (#58A6FF), P3 mint (#3FB950)
+  - Typography: JetBrains Mono (UI) + Inter (descriptions)
+*/
+
+@theme inline {
+  --color-base: #0D1117;
+  --color-surface: #161B22;
+  --color-surface-hover: #1C2128;
+  --color-border-subtle: #21262D;
+  --color-border-default: #30363D;
+  --color-border-emphasis: #484F58;
+  --color-text-primary: #E6EDF3;
+  --color-text-secondary: #8B949E;
+  --color-text-muted: #6E7681;
+  --color-accent: #58A6FF;
+  --color-accent-emphasis: #388BFD;
+  --color-accent-muted: #58A6FF26;
+  --color-success: #3FB950;
+  --color-success-muted: #3FB95026;
+  --color-warning: #D29922;
+  --color-warning-muted: #D2992226;
+  --color-danger: #F85149;
+  --color-danger-muted: #F8514926;
+  --color-info: #A371F7;
+  --color-info-muted: #A371F726;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; width: 100%; }
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-emphasis); }
+
+::selection { background: var(--color-accent-muted); color: var(--color-accent); }
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 var(--color-border-subtle);
+}
