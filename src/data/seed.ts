@@ -20,7 +20,7 @@ export function seedInitialData(actions: Actions) {
   const projectId = makeId()
   const project: Project = { id: projectId, name: 'SuperSymm Content Engine', description: 'AI-powered content automation platform for financial services — strategy planning, content generation, compliance review, and campaign management.', created_at: now }
 
-  const sprint1Id = makeId(), sprint2Id = makeId(), sprint3Id = makeId(), sprint4Id = makeId(), sprint5Id = makeId(), sprint6Id = makeId()
+  const sprint1Id = makeId(), sprint2Id = makeId(), sprint3Id = makeId(), sprint4Id = makeId(), sprint5Id = makeId(), sprint6Id = makeId(), sprint7Id = makeId()
 
   const sprints: Sprint[] = [
     { id: sprint1Id, name: 'Sprint 1 — Foundation', goal: 'Context assembly, scaffolding engine, FINRA compliance, anchor asset pipeline', status: 'completed', start_date: '2025-03-01', end_date: '2025-03-14', created_at: now },
@@ -29,6 +29,7 @@ export function seedInitialData(actions: Actions) {
     { id: sprint4Id, name: 'Sprint 4 — Polish & Archives', goal: 'Prompt review, volume tracking, multi-model, analytics, reflow, archives, presets', status: 'completed', start_date: '2025-04-12', end_date: '2025-04-25', created_at: now },
     { id: sprint5Id, name: 'Sprint 5 — Quality & UX', goal: 'Address code quality scorecard findings, UX friction points, and testing gaps', status: 'planning', created_at: now },
     { id: sprint6Id, name: 'Sprint 6 — Integrations', goal: 'MCP Server, Hermes, OpenClaw — advanced integration layer', status: 'planning', created_at: now },
+    { id: sprint7Id, name: 'Sprint 7 — Campaign Propagation & Edit Flow', goal: 'Fix strategy-to-campaign propagation, Airtable schema mismatch, polling race conditions, and route-aware edit experience', status: 'active', created_at: now },
   ]
 
   const sprint1 = { id: sprint1Id }, sprint2 = { id: sprint2Id }, sprint3 = { id: sprint3Id }, sprint4 = { id: sprint4Id }
@@ -275,6 +276,24 @@ export function seedInitialData(actions: Actions) {
     makeItem({ title: 'INT-1: MCP Server for AI Agent Access', description: 'Model Context Protocol server exposing strategy context, campaign data, and content generation capabilities to external AI agents.', priority: 'P2', status: 'backlog', sprint_id: sprint6Id, tags: ['integration', 'MCP', 'AI-agents'], effort: 'XL' }),
     makeItem({ title: 'INT-2: OpenClaw Integration', description: 'OpenClaw integration for advanced compliance checking and regulatory document analysis.', priority: 'P2', status: 'backlog', sprint_id: sprint6Id, tags: ['integration', 'OpenClaw', 'compliance'], effort: 'XL' }),
     makeItem({ title: 'INT-3: Hermes Communication Layer', description: 'Hermes integration for cross-service communication between content engine, CRM, and external marketing platforms.', priority: 'P2', status: 'backlog', sprint_id: sprint6Id, tags: ['integration', 'Hermes', 'messaging'], effort: 'XL' }),
+    // Sprint 7 items — Campaign Propagation & Edit Flow (12 fixes + 1 future enhancement)
+    // Critical fixes
+    makeItem({ title: 'FIX-1: Add "Day of Week" field to Airtable', description: 'Add a Single Line Text or Single Select field named "Day of Week" to the Content_Calendar_90_Days Airtable table. The scaffolding engine\'s `buildContentCalendarFields()` at line 209 sets this field, but Airtable rejects it with UNKNOWN_FIELD_NAME. This is the root cause of the Inngest scaffold failure.', priority: 'P0', status: 'backlog', sprint_id: sprint7Id, tags: ['airtable', 'schema', 'blocker', 'critical'], effort: 'XS' }),
+    makeItem({ title: 'FIX-2: Reorder campaign creation before volume check', description: 'In `generate-calendar/route.ts`, move the campaign insert block (lines 77-109) ABOVE the content volume check (lines 56-60). Currently, if content volumes are empty, the API returns 400 and no campaign is ever created. Campaign should always be created when `create_campaign: true`, then check volumes for scaffolding separately.', priority: 'P0', status: 'backlog', sprint_id: sprint7Id, tags: ['API', 'campaign', 'propagation', 'critical'], effort: 'S' }),
+    makeItem({ title: 'FIX-3: Add escape hatch to progress modal', description: 'Add a "View Campaign Dashboard →" button to the campaign plan wizard progress modal. Should appear as soon as `campaignId` is returned, regardless of generation status. Currently if Inngest stalls, user is trapped in the modal with no way out.', priority: 'P0', status: 'backlog', sprint_id: sprint7Id, tags: ['UX', 'wizard', 'progress-modal', 'critical'], effort: 'S' }),
+    // High priority fixes
+    makeItem({ title: 'FIX-4: Add target_platforms to strategy campaign insert', description: 'In `generate-calendar/route.ts`, add `target_platforms: plan.channels || []` to the `poc_uc_campaigns` insert. Currently strategy-created campaigns have empty platform arrays, so dashboard cards show no platform badges.', priority: 'P1', status: 'backlog', sprint_id: sprint7Id, tags: ['API', 'campaign', 'platforms'], effort: 'XS' }),
+    makeItem({ title: 'FIX-5: Add polling grace period for idle status', description: 'In `use-generation-status.ts`, add a 15-second grace period before treating `idle` status as terminal. Currently polling stops immediately on `idle`, but there\'s a window between Inngest event dispatch and pickup where status is `idle`.', priority: 'P1', status: 'backlog', sprint_id: sprint7Id, tags: ['polling', 'race-condition', 'hooks'], effort: 'S' }),
+    makeItem({ title: 'FIX-6: Handle zero-volume case in wizard', description: 'In `campaign-plan-wizard.tsx`, if `result.total_items === 0` after generate(), skip the progress modal and navigate directly to `/dashboard/campaigns?campaign=${result.campaign_id}`.', priority: 'P1', status: 'backlog', sprint_id: sprint7Id, tags: ['wizard', 'UX', 'edge-case'], effort: 'S' }),
+    makeItem({ title: 'FIX-7: Add error state handling in progress modal', description: 'In `campaign-plan-wizard.tsx`, if generation status is `error` or `failed`, show error message with "View Campaign Anyway" button instead of hanging indefinitely.', priority: 'P1', status: 'backlog', sprint_id: sprint7Id, tags: ['error-handling', 'wizard', 'UX'], effort: 'S' }),
+    // Medium priority — Edit disconnect fixes
+    makeItem({ title: 'FIX-8: Route-aware edit for strategy campaigns', description: 'In `campaigns-dashboard.tsx`, detect `metadata.source === \'strategy-module\'` when Edit is clicked. If strategy-sourced, redirect to `/dashboard/strategy-planning?tab=campaign-plans&plan={campaign_plan_id}` instead of opening the generic CampaignDialog.', priority: 'P2', status: 'backlog', sprint_id: sprint7Id, tags: ['routing', 'edit', 'wizard-parity'], effort: 'M' }),
+    makeItem({ title: 'FIX-9: Deep-link support on strategy dashboard', description: 'In `strategy-dashboard.tsx`, add `useSearchParams()` to read `?tab=` and `?plan=` query params. Set initial `activeTab` from `tabParam` and pass `planParam` as `autoOpenPlanId` to CampaignPlanList.', priority: 'P2', status: 'backlog', sprint_id: sprint7Id, tags: ['routing', 'deep-link', 'navigation'], effort: 'S' }),
+    makeItem({ title: 'FIX-10: Auto-open wizard from deep link', description: 'In `campaign-plan-list.tsx`, add optional `autoOpenPlanId?: string` prop. When it matches a plan in the list, auto-open the wizard for that plan. Clean up URL after opening.', priority: 'P2', status: 'backlog', sprint_id: sprint7Id, tags: ['wizard', 'deep-link', 'auto-open'], effort: 'S' }),
+    makeItem({ title: 'FIX-11: Strategy badge on campaign cards', description: 'In `campaign-card.tsx`, add a violet "Strategy" badge with Sparkles icon when `metadata.source === \'strategy-module\'`. Helps users visually distinguish strategy-sourced campaigns from manually created ones.', priority: 'P2', status: 'backlog', sprint_id: sprint7Id, tags: ['UX', 'badge', 'visual'], effort: 'XS' }),
+    makeItem({ title: 'FIX-12: "Edit Strategy" button label', description: 'In `campaign-detail.tsx` (line 1431-1435), when `metadata.source === \'strategy-module\'`, show "Edit Strategy" with Sparkles icon instead of generic "Edit" with Edit icon.', priority: 'P2', status: 'backlog', sprint_id: sprint7Id, tags: ['UX', 'button', 'labeling'], effort: 'XS' }),
+    // Future enhancement
+    makeItem({ title: 'ENH: Unified wizard with full field parity', description: 'Create a unified campaign edit experience that shows both strategy fields (theme, personas, volumes, anchor type, context config) AND campaign fields (budget, schedule, tags, ad sets) in one interface. Options: tabbed wizard or extended wizard with additional steps. This is the "true parity" solution — currently deferred in favor of route-aware edit (FIX-8 through FIX-12).', priority: 'P3', status: 'backlog', sprint_id: sprint7Id, tags: ['wizard', 'parity', 'future', 'enhancement'], effort: 'XL' }),
   ]
 
   // Build context docs in-memory
@@ -374,6 +393,34 @@ Strategy Context → Context Assembly → Prompt Composition → AI Generation �
 - TC-9.1: Full anchor-to-archive flow
 - TC-10.1: Multi-persona differentiation
 - TC-10.2: Strategy change propagation`,
+    },
+    {
+      id: makeId(), project_id: projectId, created_at: now, updated_at: now,
+      title: 'Campaign Propagation Analysis',
+      content: `# Campaign Propagation — Unified Analysis
+
+## Root Cause: Airtable Schema Mismatch
+Inngest scaffold function crashes at Airtable API call because Content_Calendar_90_Days table
+lacks a "Day of Week" field. The scaffolding engine always sets this field at line 209.
+
+## Failure Chain
+1. Wizard calls generate-calendar → campaign IS created in poc_uc_campaigns
+2. Inngest scaffold starts → tries createMany → Airtable rejects "Day of Week"
+3. Generation status never reaches 'complete' → progress modal hangs
+4. User is stuck — campaign exists in DB but is invisible
+
+## Two Wizard Problem
+| | Strategy Wizard | Campaign Dialog |
+|---|---|---|
+| Steps | 5 (Theme, Personas, Asset Map, Volume, Review) | 1 (flat form) |
+| Fields | Personas, anchor type, volumes, templates | Name, budget, tags, ad sets |
+| Writes to | poc_sp_campaign_plans → poc_uc_campaigns | poc_uc_campaigns directly |
+
+## Fix Plan: 12 Items
+- 3 Critical (P0): Airtable field, reorder creation, escape hatch
+- 4 High (P1): target_platforms, polling grace, zero-volume, error state
+- 5 Medium (P2): Route-aware edit, deep-link, auto-open, badge, button label
+- 1 Future (P3): Unified wizard with full field parity`,
     },
   ]
 
