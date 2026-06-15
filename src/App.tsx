@@ -11,6 +11,7 @@ import KanbanBoard from '@/components/KanbanBoard'
 import ListView from '@/components/ListView'
 import ItemDetail from '@/components/ItemDetail'
 import NewItemDialog from '@/components/NewItemDialog'
+import QuickCapture from '@/components/QuickCapture'
 import { seedInitialData } from '@/data/seed'
 import './index.css'
 
@@ -19,6 +20,7 @@ export default function App() {
   const actions = useActions()
   const manifestBacked = useIsManifestBacked()
   const [showNewItem, setShowNewItem] = useState(false)
+  const [showQuickCapture, setShowQuickCapture] = useState(false)
 
   // Seed initial data on first load
   useEffect(() => {
@@ -45,15 +47,20 @@ export default function App() {
           e.preventDefault()
           document.querySelector<HTMLInputElement>('input[placeholder="Search items..."]')?.focus()
           break
+        case 'q':
+          e.preventDefault()
+          setShowQuickCapture(prev => !prev)
+          break
         case 'Escape':
-          if (state.activeItemId) actions.setActiveItem(null)
+          if (showQuickCapture) setShowQuickCapture(false)
+          else if (state.activeItemId) actions.setActiveItem(null)
           else if (showNewItem) setShowNewItem(false)
           break
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [state.activeItemId, showNewItem, manifestBacked])
+  }, [state.activeItemId, showNewItem, manifestBacked, showQuickCapture])
 
   return (
     <div className="h-full flex overflow-hidden" style={{ backgroundColor: 'var(--color-base)' }}>
@@ -64,6 +71,7 @@ export default function App() {
       </div>
       {state.activeItemId && <ItemDetail readOnly={manifestBacked} />}
       <NewItemDialog open={showNewItem} onClose={() => setShowNewItem(false)} />
+      <QuickCapture open={showQuickCapture} onClose={() => setShowQuickCapture(false)} />
     </div>
   )
 }
