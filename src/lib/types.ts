@@ -24,7 +24,7 @@ export interface Sprint {
   goal?: string
   start_date?: string
   end_date?: string
-  status: 'planning' | 'active' | 'completed'
+  status: 'planning' | 'active' | 'completed' | 'archived'
   created_at: string
 }
 
