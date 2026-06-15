@@ -4,7 +4,7 @@
   Keyboard shortcuts: n=new, /=search, Esc=close
 */
 import { useState, useEffect } from 'react'
-import { useAppState, useActions } from '@/store/useStore'
+import { useAppState, useActions, useIsManifestBacked } from '@/store/useStore'
 import Sidebar from '@/components/Sidebar'
 import Toolbar from '@/components/Toolbar'
 import KanbanBoard from '@/components/KanbanBoard'
@@ -17,6 +17,7 @@ import './index.css'
 export default function App() {
   const state = useAppState()
   const actions = useActions()
+  const manifestBacked = useIsManifestBacked()
   const [showNewItem, setShowNewItem] = useState(false)
 
   // Seed initial data on first load
@@ -36,6 +37,7 @@ export default function App() {
 
       switch (e.key) {
         case 'n':
+          if (manifestBacked) break
           e.preventDefault()
           setShowNewItem(true)
           break
@@ -51,7 +53,7 @@ export default function App() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [state.activeItemId, showNewItem])
+  }, [state.activeItemId, showNewItem, manifestBacked])
 
   return (
     <div className="h-full flex overflow-hidden" style={{ backgroundColor: 'var(--color-base)' }}>
@@ -60,7 +62,7 @@ export default function App() {
         <Toolbar onNewItem={() => setShowNewItem(true)} />
         {state.viewMode === 'board' ? <KanbanBoard /> : <ListView />}
       </div>
-      {state.activeItemId && <ItemDetail />}
+      {state.activeItemId && <ItemDetail readOnly={manifestBacked} />}
       <NewItemDialog open={showNewItem} onClose={() => setShowNewItem(false)} />
     </div>
   )

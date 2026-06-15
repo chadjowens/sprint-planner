@@ -6,7 +6,7 @@
 import { useFilteredItems, useActions, useAppState } from '@/store/useStore'
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/lib/types'
 import type { BacklogItem, ItemStatus } from '@/lib/types'
-import { Copy, GripVertical, MoreHorizontal } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { itemToMarkdown, copyToClipboard } from '@/lib/markdown'
 import { useState } from 'react'
 
@@ -94,32 +94,8 @@ function Column({ status, items }: { status: ItemStatus; items: BacklogItem[] })
   const actions = useActions()
   const config = STATUS_CONFIG[status]
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const itemId = e.dataTransfer.getData('text/plain')
-    if (itemId) {
-      actions.moveItem(itemId, status)
-    }
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-accent-muted)'
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
-  }
-
   return (
-    <div
-      className="flex-1 min-w-[220px] flex flex-col rounded"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      style={{ transition: 'background-color 150ms' }}
-    >
+    <div className="flex-1 min-w-[220px] flex flex-col rounded">
       {/* Column header */}
       <div className="flex items-center gap-2 px-2 py-2 mb-2">
         <span className="text-sm" style={{ color: config.color }}>{config.icon}</span>
@@ -136,17 +112,12 @@ function Column({ status, items }: { status: ItemStatus; items: BacklogItem[] })
       {/* Cards */}
       <div className="flex-1 flex flex-col gap-1.5 px-1 pb-2 overflow-y-auto">
         {items.map(item => (
-          <div
+          <ItemCard
             key={item.id}
-            draggable
-            onDragStart={e => e.dataTransfer.setData('text/plain', item.id)}
-          >
-            <ItemCard
-              item={item}
-              onSelect={() => actions.setActiveItem(item.id)}
-              onCopy={() => {}}
-            />
-          </div>
+            item={item}
+            onSelect={() => actions.setActiveItem(item.id)}
+            onCopy={() => {}}
+          />
         ))}
       </div>
     </div>

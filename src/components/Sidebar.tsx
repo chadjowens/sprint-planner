@@ -4,13 +4,14 @@
   JetBrains Mono, flat borders, monospace labels.
 */
 import { useState } from 'react'
-import { useAppState, useActions } from '@/store/useStore'
+import { useAppState, useActions, useIsManifestBacked } from '@/store/useStore'
 import { ChevronDown, ChevronRight, Plus, FolderOpen, Zap, FileText, LayoutGrid, List, Trash2, Settings } from 'lucide-react'
 import type { Sprint } from '@/lib/types'
 
 export default function Sidebar() {
   const state = useAppState()
   const actions = useActions()
+  const manifestBacked = useIsManifestBacked()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     sprints: true,
     backlog: true,
@@ -106,12 +107,14 @@ export default function Sidebar() {
             style={{ color: 'var(--color-text-muted)' }}>
             {expandedSections.sprints ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
             Sprints
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowNewSprint(true) }}
-              className="ml-auto p-0.5 rounded hover:bg-[var(--color-border-subtle)]"
-              title="New sprint (keyboard: s)">
-              <Plus size={10} />
-            </button>
+            {!manifestBacked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNewSprint(true) }}
+                className="ml-auto p-0.5 rounded hover:bg-[var(--color-border-subtle)]"
+                title="New sprint (keyboard: s)">
+                <Plus size={10} />
+              </button>
+            )}
           </button>
 
           {expandedSections.sprints && (

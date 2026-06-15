@@ -2,21 +2,60 @@
   DESIGN: Terminal Aesthetic — Toolbar
   Top bar with search, priority/status filters, and action buttons.
 */
-import { useState } from 'react'
-import { useAppState, useActions, useActiveSprint } from '@/store/useStore'
+import { useRef, useState } from 'react'
+import { useAppState, useActions, useActiveSprint, useIsManifestBacked } from '@/store/useStore'
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/lib/types'
-import type { Priority, ItemStatus } from '@/lib/types'
-import { Search, Plus, Download, Upload, X } from 'lucide-react'
+import type { Priority, ItemStatus, AppState } from '@/lib/types'
+import { Search, Plus, Download, Upload, RefreshCw, X } from 'lucide-react'
 import { backlogToMarkdown, downloadAsFile } from '@/lib/markdown'
 
 export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
   const state = useAppState()
   const actions = useActions()
   const activeSprint = useActiveSprint()
+  const manifestBacked = useIsManifestBacked()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [syncing, setSyncing] = useState(false)
 
   const handleExportAll = () => {
     const md = backlogToMarkdown(state.items, state.sprints)
     downloadAsFile(md, 'backlog.md')
+  }
+
+  const handleSync = async () => {
+    const url = import.meta.env.VITE_MANIFEST_URL
+    if (!url) {
+      alert('VITE_MANIFEST_URL is not configured.')
+      return
+    }
+    setSyncing(true)
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: Partial<AppState> = await res.json()
+      actions.importState(data)
+    } catch (err) {
+      alert(`Sync failed: ${err instanceof Error ? err.message : err}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data: Partial<AppState> = JSON.parse(reader.result as string)
+        actions.importState(data)
+      } catch {
+        alert('Invalid JSON file.')
+      }
+    }
+    reader.readAsText(file)
+    // Reset input so the same file can be re-imported
+    e.target.value = ''
   }
 
   return (
@@ -90,17 +129,44 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 ml-auto">
+        {/* Sync from remote manifest */}
+        <button onClick={handleSync} disabled={syncing}
+          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
+          style={{ color: 'var(--color-text-muted)', opacity: syncing ? 0.5 : 1 }}
+          title="Fetch sprints.json from VITE_MANIFEST_URL">
+          <RefreshCw size={11} className={syncing ? 'animate-spin' : ''} /> ↓ Sync
+        </button>
+
+        {/* Import local file */}
+        <button onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
+          style={{ color: 'var(--color-text-muted)' }}
+          title="Import a local sprints.json file">
+          <Upload size={11} /> ↑ Import
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImportFile}
+          className="hidden"
+        />
+
         <button onClick={handleExportAll}
           className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
           style={{ color: 'var(--color-text-muted)' }}
           title="Export backlog as Markdown">
           <Download size={11} /> Export
         </button>
-        <button onClick={onNewItem}
-          className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded transition-colors"
-          style={{ backgroundColor: 'var(--color-accent-muted)', color: 'var(--color-accent)' }}>
-          <Plus size={11} /> New Item
-        </button>
+
+        {/* Hide New Item in manifest-backed mode */}
+        {!manifestBacked && (
+          <button onClick={onNewItem}
+            className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded transition-colors"
+            style={{ backgroundColor: 'var(--color-accent-muted)', color: 'var(--color-accent)' }}>
+            <Plus size={11} /> New Item
+          </button>
+        )}
       </div>
     </div>
   )
