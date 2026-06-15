@@ -56,6 +56,7 @@ export interface AppState {
   searchQuery: string
   filterPriority: Priority | null
   filterStatus: ItemStatus | null
+  manifestBacked: boolean
 }
 
 export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string }> = {
@@ -66,10 +67,10 @@ export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; b
 }
 
 export const STATUS_CONFIG: Record<ItemStatus, { label: string; icon: string; color: string }> = {
-  backlog: { label: 'Backlog', icon: '□', color: '#8B949E' },
-  in_progress: { label: 'In Progress', icon: '▶', color: '#D29922' },
-  in_review: { label: 'In Review', icon: '◆', color: '#A371F7' },
-  done: { label: 'Done', icon: '■', color: '#3FB950' },
+  backlog: { label: 'Queue', icon: '□', color: '#8B949E' },
+  in_progress: { label: 'Running', icon: '▶', color: '#D29922' },
+  in_review: { label: 'Review', icon: '◆', color: '#A371F7' },
+  done: { label: 'Shipped', icon: '■', color: '#3FB950' },
 }
 
 export const EFFORT_CONFIG: Record<string, { label: string; hours: string }> = {

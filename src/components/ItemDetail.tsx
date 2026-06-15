@@ -11,7 +11,7 @@ import { X, Copy, Download, Trash2, Check } from 'lucide-react'
 import { itemToMarkdown, copyToClipboard, downloadAsFile } from '@/lib/markdown'
 import ReactMarkdown from 'react-markdown'
 
-export default function ItemDetail() {
+export default function ItemDetail({ readOnly = false }: { readOnly?: boolean }) {
   const item = useActiveItem()
   const state = useAppState()
   const actions = useActions()
@@ -47,6 +47,7 @@ export default function ItemDetail() {
   }
 
   const startEdit = (field: string, value: string) => {
+    if (readOnly) return
     setEditing(field)
     setEditValue(value)
   }
@@ -59,6 +60,7 @@ export default function ItemDetail() {
   }
 
   const handleAddTag = () => {
+    if (readOnly) return
     if (!newTag.trim()) return
     if (!item.tags.includes(newTag.trim())) {
       actions.updateItem(item.id, { tags: [...item.tags, newTag.trim()] })
@@ -67,6 +69,7 @@ export default function ItemDetail() {
   }
 
   const handleRemoveTag = (tag: string) => {
+    if (readOnly) return
     actions.updateItem(item.id, { tags: item.tags.filter(t => t !== tag) })
   }
 
@@ -106,7 +109,7 @@ export default function ItemDetail() {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
 
         {/* Title */}
-        {editing === 'title' ? (
+        {!readOnly && editing === 'title' ? (
           <input
             autoFocus
             value={editValue}
@@ -119,7 +122,7 @@ export default function ItemDetail() {
         ) : (
           <h2
             onClick={() => startEdit('title', item.title)}
-            className="text-sm font-semibold cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+            className={`text-sm font-semibold transition-colors ${readOnly ? '' : 'cursor-pointer hover:text-[var(--color-accent)]'}`}
             style={{ color: 'var(--color-text-primary)' }}>
             {item.title}
           </h2>
@@ -134,12 +137,15 @@ export default function ItemDetail() {
             <div className="flex gap-1">
               {(['P0', 'P1', 'P2', 'P3'] as Priority[]).map(p => (
                 <button key={p}
-                  onClick={() => actions.updateItem(item.id, { priority: p })}
+                  onClick={() => { if (!readOnly) actions.updateItem(item.id, { priority: p }) }}
+                  disabled={readOnly}
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm transition-all"
                   style={{
                     color: PRIORITY_CONFIG[p].color,
                     backgroundColor: item.priority === p ? PRIORITY_CONFIG[p].bg : 'transparent',
                     border: `1px solid ${item.priority === p ? PRIORITY_CONFIG[p].color : 'var(--color-border-subtle)'}`,
+                    opacity: readOnly ? 0.7 : 1,
+                    cursor: readOnly ? 'default' : 'pointer',
                   }}>
                   {p}
                 </button>
@@ -153,9 +159,16 @@ export default function ItemDetail() {
               style={{ color: 'var(--color-text-muted)' }}>Status</label>
             <select
               value={item.status}
-              onChange={e => actions.moveItem(item.id, e.target.value as ItemStatus)}
+              onChange={e => { if (!readOnly) actions.moveItem(item.id, e.target.value as ItemStatus) }}
+              disabled={readOnly}
               className="text-[11px] px-2 py-1 rounded border bg-transparent w-full"
-              style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-base)' }}>
+              style={{
+                borderColor: 'var(--color-border-default)',
+                color: 'var(--color-text-primary)',
+                backgroundColor: 'var(--color-base)',
+                opacity: readOnly ? 0.7 : 1,
+                cursor: readOnly ? 'default' : 'pointer',
+              }}>
               {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.icon} {cfg.label}</option>
               ))}
@@ -169,12 +182,15 @@ export default function ItemDetail() {
             <div className="flex gap-1">
               {Object.entries(EFFORT_CONFIG).map(([key, cfg]) => (
                 <button key={key}
-                  onClick={() => actions.updateItem(item.id, { effort: key as BacklogItem['effort'] })}
+                  onClick={() => { if (!readOnly) actions.updateItem(item.id, { effort: key as BacklogItem['effort'] }) }}
+                  disabled={readOnly}
                   className="text-[10px] px-1.5 py-0.5 rounded-sm transition-all"
                   style={{
                     color: item.effort === key ? 'var(--color-accent)' : 'var(--color-text-muted)',
                     backgroundColor: item.effort === key ? 'var(--color-accent-muted)' : 'transparent',
                     border: `1px solid ${item.effort === key ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
+                    opacity: readOnly ? 0.7 : 1,
+                    cursor: readOnly ? 'default' : 'pointer',
                   }}>
                   {key}
                 </button>
@@ -188,9 +204,16 @@ export default function ItemDetail() {
               style={{ color: 'var(--color-text-muted)' }}>Sprint</label>
             <select
               value={item.sprint_id || ''}
-              onChange={e => actions.updateItem(item.id, { sprint_id: e.target.value || null })}
+              onChange={e => { if (!readOnly) actions.updateItem(item.id, { sprint_id: e.target.value || null }) }}
+              disabled={readOnly}
               className="text-[11px] px-2 py-1 rounded border bg-transparent w-full"
-              style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-base)' }}>
+              style={{
+                borderColor: 'var(--color-border-default)',
+                color: 'var(--color-text-primary)',
+                backgroundColor: 'var(--color-base)',
+                opacity: readOnly ? 0.7 : 1,
+                cursor: readOnly ? 'default' : 'pointer',
+              }}>
               <option value="">Unassigned</option>
               {state.sprints.map(sp => (
                 <option key={sp.id} value={sp.id}>{sp.name}</option>
@@ -208,29 +231,33 @@ export default function ItemDetail() {
               <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-sm flex items-center gap-1 group"
                 style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-border-subtle)' }}>
                 {tag}
-                <button onClick={() => handleRemoveTag(tag)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--color-danger)' }}>
-                  <X size={8} />
-                </button>
+                {!readOnly && (
+                  <button onClick={() => handleRemoveTag(tag)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: 'var(--color-danger)' }}>
+                    <X size={8} />
+                  </button>
+                )}
               </span>
             ))}
           </div>
-          <input
-            value={newTag}
-            onChange={e => setNewTag(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAddTag(); if (e.key === 'Escape') setNewTag('') }}
-            placeholder="Add tag..."
-            className="text-[10px] px-2 py-1 rounded border bg-transparent w-full"
-            style={{ borderColor: 'var(--color-border-subtle)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-base)' }}
-          />
+          {!readOnly && (
+            <input
+              value={newTag}
+              onChange={e => setNewTag(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddTag(); if (e.key === 'Escape') setNewTag('') }}
+              placeholder="Add tag..."
+              className="text-[10px] px-2 py-1 rounded border bg-transparent w-full"
+              style={{ borderColor: 'var(--color-border-subtle)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-base)' }}
+            />
+          )}
         </div>
 
         {/* Description */}
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1"
             style={{ color: 'var(--color-text-muted)' }}>Description</label>
-          {editing === 'description' ? (
+          {!readOnly && editing === 'description' ? (
             <div>
               <textarea
                 autoFocus
@@ -257,14 +284,16 @@ export default function ItemDetail() {
           ) : (
             <div
               onClick={() => startEdit('description', item.description)}
-              className="text-xs rounded p-2 cursor-pointer min-h-[60px] transition-colors hover:bg-[var(--color-surface-hover)]"
+              className={`text-xs rounded p-2 min-h-[60px] transition-colors ${readOnly ? '' : 'cursor-pointer hover:bg-[var(--color-surface-hover)]'}`}
               style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-base)', fontFamily: 'var(--font-sans)' }}>
               {item.description ? (
                 <div className="prose prose-invert prose-xs max-w-none [&_p]:text-xs [&_p]:leading-relaxed [&_li]:text-xs [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_code]:text-[10px] [&_code]:bg-[var(--color-surface)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
                   <ReactMarkdown>{item.description}</ReactMarkdown>
                 </div>
               ) : (
-                <span style={{ color: 'var(--color-text-muted)' }}>Click to add description...</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  {readOnly ? 'No description' : 'Click to add description...'}
+                </span>
               )}
             </div>
           )}
@@ -274,7 +303,7 @@ export default function ItemDetail() {
         <div>
           <label className="text-[10px] uppercase tracking-wider block mb-1"
             style={{ color: 'var(--color-text-muted)' }}>Notes</label>
-          {editing === 'notes' ? (
+          {!readOnly && editing === 'notes' ? (
             <div>
               <textarea
                 autoFocus
@@ -301,14 +330,16 @@ export default function ItemDetail() {
           ) : (
             <div
               onClick={() => startEdit('notes', item.notes || '')}
-              className="text-xs rounded p-2 cursor-pointer min-h-[40px] transition-colors hover:bg-[var(--color-surface-hover)]"
+              className={`text-xs rounded p-2 min-h-[40px] transition-colors ${readOnly ? '' : 'cursor-pointer hover:bg-[var(--color-surface-hover)]'}`}
               style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-base)', fontFamily: 'var(--font-sans)' }}>
               {item.notes ? (
                 <div className="prose prose-invert prose-xs max-w-none [&_p]:text-xs [&_p]:leading-relaxed">
                   <ReactMarkdown>{item.notes}</ReactMarkdown>
                 </div>
               ) : (
-                <span style={{ color: 'var(--color-text-muted)' }}>Click to add notes...</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  {readOnly ? 'No notes' : 'Click to add notes...'}
+                </span>
               )}
             </div>
           )}
@@ -329,30 +360,32 @@ export default function ItemDetail() {
           )}
         </div>
 
-        {/* Delete */}
-        <div className="pt-2">
-          {showDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px]" style={{ color: 'var(--color-danger)' }}>Delete this item?</span>
-              <button onClick={() => actions.deleteItem(item.id)}
-                className="text-[10px] px-2 py-1 rounded"
-                style={{ backgroundColor: 'var(--color-danger-muted)', color: 'var(--color-danger)' }}>
-                Yes, delete
-              </button>
-              <button onClick={() => setShowDelete(false)}
-                className="text-[10px] px-2 py-1 rounded"
+        {/* Delete — hidden in read-only mode */}
+        {!readOnly && (
+          <div className="pt-2">
+            {showDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px]" style={{ color: 'var(--color-danger)' }}>Delete this item?</span>
+                <button onClick={() => actions.deleteItem(item.id)}
+                  className="text-[10px] px-2 py-1 rounded"
+                  style={{ backgroundColor: 'var(--color-danger-muted)', color: 'var(--color-danger)' }}>
+                  Yes, delete
+                </button>
+                <button onClick={() => setShowDelete(false)}
+                  className="text-[10px] px-2 py-1 rounded"
+                  style={{ color: 'var(--color-text-muted)' }}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowDelete(true)}
+                className="text-[10px] flex items-center gap-1 px-2 py-1 rounded transition-colors hover:bg-[var(--color-danger-muted)]"
                 style={{ color: 'var(--color-text-muted)' }}>
-                Cancel
+                <Trash2 size={10} /> Delete item
               </button>
-            </div>
-          ) : (
-            <button onClick={() => setShowDelete(true)}
-              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded transition-colors hover:bg-[var(--color-danger-muted)]"
-              style={{ color: 'var(--color-text-muted)' }}>
-              <Trash2 size={10} /> Delete item
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   )

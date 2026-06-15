@@ -1,12 +1,13 @@
 /*
   DESIGN: Terminal Aesthetic — Kanban Board
-  Four columns: Backlog, In Progress, In Review, Done
+  Four columns: Queue, Running, Review, Shipped (Warp execution sequence)
   Flat borders, monospace labels, priority badges as terminal tags.
+  Sprint progress bar above the board; pulse glow on Running items.
 */
 import { useFilteredItems, useActions, useAppState } from '@/store/useStore'
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/lib/types'
 import type { BacklogItem, ItemStatus } from '@/lib/types'
-import { Copy, GripVertical, MoreHorizontal } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { itemToMarkdown, copyToClipboard } from '@/lib/markdown'
 import { useState } from 'react'
 
@@ -34,13 +35,13 @@ function ItemCard({ item, onSelect, onCopy }: {
   return (
     <div
       onClick={onSelect}
-      className="group px-3 py-2.5 border rounded cursor-pointer transition-all duration-100 hover:translate-x-0.5"
+      className={`group px-3 py-2.5 border rounded cursor-pointer transition-all duration-100 hover:translate-x-0.5${item.status === 'in_progress' ? ' pulse-running' : ''}`}
       style={{
-        borderColor: 'var(--color-border-subtle)',
+        borderColor: item.status === 'in_progress' ? 'var(--color-warning)' : 'var(--color-border-subtle)',
         backgroundColor: 'var(--color-surface)',
       }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-border-default)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-subtle)')}
+      onMouseEnter={e => { if (item.status !== 'in_progress') e.currentTarget.style.borderColor = 'var(--color-border-default)' }}
+      onMouseLeave={e => { if (item.status !== 'in_progress') e.currentTarget.style.borderColor = 'var(--color-border-subtle)' }}
     >
       {/* Top row: priority + copy */}
       <div className="flex items-center gap-2 mb-1.5">
@@ -94,32 +95,8 @@ function Column({ status, items }: { status: ItemStatus; items: BacklogItem[] })
   const actions = useActions()
   const config = STATUS_CONFIG[status]
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const itemId = e.dataTransfer.getData('text/plain')
-    if (itemId) {
-      actions.moveItem(itemId, status)
-    }
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-accent-muted)'
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
-  }
-
   return (
-    <div
-      className="flex-1 min-w-[220px] flex flex-col rounded"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      style={{ transition: 'background-color 150ms' }}
-    >
+    <div className="flex-1 min-w-[220px] flex flex-col rounded">
       {/* Column header */}
       <div className="flex items-center gap-2 px-2 py-2 mb-2">
         <span className="text-sm" style={{ color: config.color }}>{config.icon}</span>
@@ -136,18 +113,50 @@ function Column({ status, items }: { status: ItemStatus; items: BacklogItem[] })
       {/* Cards */}
       <div className="flex-1 flex flex-col gap-1.5 px-1 pb-2 overflow-y-auto">
         {items.map(item => (
-          <div
+          <ItemCard
             key={item.id}
-            draggable
-            onDragStart={e => e.dataTransfer.setData('text/plain', item.id)}
-          >
-            <ItemCard
-              item={item}
-              onSelect={() => actions.setActiveItem(item.id)}
-              onCopy={() => {}}
-            />
-          </div>
+            item={item}
+            onSelect={() => actions.setActiveItem(item.id)}
+            onCopy={() => {}}
+          />
         ))}
+      </div>
+    </div>
+  )
+}
+
+function SprintProgress() {
+  const state = useAppState()
+  const sprintItems = state.activeSprintId
+    ? state.items.filter(i => i.sprint_id === state.activeSprintId)
+    : state.items
+  const total = sprintItems.length
+  const done = sprintItems.filter(i => i.status === 'done').length
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+  const label = state.activeSprintId
+    ? state.sprints.find(s => s.id === state.activeSprintId)?.name ?? 'Sprint'
+    : 'All items'
+
+  return (
+    <div className="px-4 pt-3 pb-1">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: 'var(--color-text-muted)' }}>
+          {label}
+        </span>
+        <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+          {done}/{total} shipped · {pct}%
+        </span>
+      </div>
+      <div className="h-1 rounded-full overflow-hidden"
+        style={{ backgroundColor: 'var(--color-border-subtle)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${pct}%`,
+            backgroundColor: pct === 100 ? 'var(--color-success)' : 'var(--color-accent)',
+          }}
+        />
       </div>
     </div>
   )
@@ -174,10 +183,13 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="flex-1 flex gap-3 p-4 overflow-x-auto">
-      {COLUMNS.map(status => (
-        <Column key={status} status={status} items={columnItems[status]} />
-      ))}
+    <div className="flex-1 flex flex-col min-h-0">
+      <SprintProgress />
+      <div className="flex-1 flex gap-3 p-4 overflow-x-auto">
+        {COLUMNS.map(status => (
+          <Column key={status} status={status} items={columnItems[status]} />
+        ))}
+      </div>
     </div>
   )
 }

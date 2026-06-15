@@ -16,6 +16,7 @@ const defaultState: AppState = {
   searchQuery: '',
   filterPriority: null,
   filterStatus: null,
+  manifestBacked: false,
 }
 
 function loadState(): AppState {
@@ -68,6 +69,11 @@ export function useActiveSprint(): Sprint | null {
 export function useActiveItem(): BacklogItem | null {
   const s = useAppState()
   return s.items.find(i => i.id === s.activeItemId) ?? null
+}
+
+export function useIsManifestBacked(): boolean {
+  const s = useAppState()
+  return s.manifestBacked
 }
 
 export function useFilteredItems(): BacklogItem[] {
@@ -242,9 +248,9 @@ export function useActions() {
       setState(s => ({ ...s, filterStatus: status }))
     }, []),
 
-    // Bulk import (full replacement, not merge)
+    // Bulk import (full replacement, not merge) — marks state as manifest-backed
     importState: useCallback((data: Partial<AppState>) => {
-      setState(() => ({ ...defaultState, ...data }))
+      setState(() => ({ ...defaultState, ...data, manifestBacked: true }))
     }, []),
 
     // Export full state
