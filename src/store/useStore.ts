@@ -12,6 +12,7 @@ const defaultState: AppState = {
   activeProjectId: null,
   activeSprintId: null,
   activeItemId: null,
+  activeDocId: null,
   viewMode: 'board',
   searchQuery: '',
   filterPriority: null,
@@ -74,6 +75,11 @@ export function useActiveItem(): BacklogItem | null {
 export function useIsManifestBacked(): boolean {
   const s = useAppState()
   return s.manifestBacked
+}
+
+export function useActiveDoc(): ContextDoc | null {
+  const s = useAppState()
+  return s.contextDocs.find(d => d.id === s.activeDocId) ?? null
 }
 
 export function useFilteredItems(): BacklogItem[] {
@@ -210,7 +216,11 @@ export function useActions() {
     }, []),
 
     setActiveItem: useCallback((id: string | null) => {
-      setState(s => ({ ...s, activeItemId: id }))
+      setState(s => ({ ...s, activeItemId: id, activeDocId: null }))
+    }, []),
+
+    setActiveDoc: useCallback((id: string | null) => {
+      setState(s => ({ ...s, activeDocId: id, activeItemId: null }))
     }, []),
 
     // Context Docs

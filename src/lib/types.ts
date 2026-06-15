@@ -24,7 +24,7 @@ export interface Sprint {
   goal?: string
   start_date?: string
   end_date?: string
-  status: 'planning' | 'active' | 'completed'
+  status: 'planning' | 'active' | 'completed' | 'archived'
   created_at: string
 }
 
@@ -52,6 +52,7 @@ export interface AppState {
   activeProjectId: string | null
   activeSprintId: string | null
   activeItemId: string | null
+  activeDocId: string | null
   viewMode: ViewMode
   searchQuery: string
   filterPriority: Priority | null

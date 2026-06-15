@@ -89,3 +89,8 @@ kbd {
   border-radius: 3px;
   box-shadow: 0 1px 0 var(--color-border-subtle);
 }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

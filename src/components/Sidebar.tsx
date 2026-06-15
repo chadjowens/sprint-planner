@@ -5,8 +5,9 @@
 */
 import { useState } from 'react'
 import { useAppState, useActions, useIsManifestBacked } from '@/store/useStore'
-import { ChevronDown, ChevronRight, Plus, FolderOpen, Zap, FileText, LayoutGrid, List, Trash2, Settings } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, FolderOpen, Zap, FileText, LayoutGrid, List, Trash2, Settings, ArrowRight } from 'lucide-react'
 import type { Sprint } from '@/lib/types'
+import SprintCloseOut from '@/components/SprintCloseOut'
 
 export default function Sidebar() {
   const state = useAppState()
@@ -19,6 +20,7 @@ export default function Sidebar() {
   })
   const [showNewSprint, setShowNewSprint] = useState(false)
   const [newSprintName, setNewSprintName] = useState('')
+  const [closeOutSprintId, setCloseOutSprintId] = useState<string | null>(null)
 
   const toggle = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -145,23 +147,33 @@ export default function Sidebar() {
                 const counts = getSprintItemCounts(sprint)
                 const isActive = state.activeSprintId === sprint.id
                 return (
-                  <button
-                    key={sprint.id}
-                    onClick={() => actions.setActiveSprint(sprint.id)}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)] group"
-                    style={{
-                      color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                      backgroundColor: isActive ? 'var(--color-accent-muted)' : 'transparent',
-                    }}>
-                    <Zap size={11} style={{
-                      color: sprint.status === 'active' ? 'var(--color-warning)' :
-                             sprint.status === 'completed' ? 'var(--color-success)' : 'var(--color-text-muted)'
-                    }} />
-                    <span className="truncate">{sprint.name}</span>
-                    <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
-                      {counts.done}/{counts.total}
-                    </span>
-                  </button>
+                  <div key={sprint.id}>
+                    <button
+                      onClick={() => actions.setActiveSprint(sprint.id)}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)] group"
+                      style={{
+                        color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                        backgroundColor: isActive ? 'var(--color-accent-muted)' : 'transparent',
+                      }}>
+                      <Zap size={11} style={{
+                        color: sprint.status === 'active' ? 'var(--color-warning)' :
+                               sprint.status === 'completed' ? 'var(--color-success)' : 'var(--color-text-muted)'
+                      }} />
+                      <span className="truncate">{sprint.name}</span>
+                      <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+                        {counts.done}/{counts.total}
+                      </span>
+                    </button>
+                    {sprint.status === 'completed' && (
+                      <button
+                        onClick={() => setCloseOutSprintId(sprint.id)}
+                        className="w-full flex items-center gap-1 pl-8 pr-3 py-1 text-[10px] transition-colors hover:bg-[var(--color-surface-hover)]"
+                        style={{ color: 'var(--color-success)' }}>
+                        <ArrowRight size={9} />
+                        Close sprint
+                      </button>
+                    )}
+                  </div>
                 )
               })}
 
@@ -202,9 +214,12 @@ export default function Sidebar() {
               {state.contextDocs.map(doc => (
                 <button
                   key={doc.id}
-                  onClick={() => actions.setActiveItem(null)} // TODO: open doc viewer
+                  onClick={() => actions.setActiveDoc(doc.id)}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)]"
-                  style={{ color: 'var(--color-text-secondary)' }}>
+                  style={{
+                    color: state.activeDocId === doc.id ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                    backgroundColor: state.activeDocId === doc.id ? 'var(--color-accent-muted)' : 'transparent',
+                  }}>
                   <FileText size={11} />
                   <span className="truncate">{doc.title}</span>
                 </button>
@@ -226,6 +241,24 @@ export default function Sidebar() {
         <kbd>n</kbd> new
         <kbd>?</kbd> help
       </div>
+
+      {/* Sprint Close-Out Panel */}
+      {closeOutSprintId && (() => {
+        const sprint = state.sprints.find(s => s.id === closeOutSprintId)
+        if (!sprint) return null
+        const sprintItems = state.items.filter(i => i.sprint_id === sprint.id)
+        return (
+          <SprintCloseOut
+            sprint={sprint}
+            items={sprintItems}
+            onClose={() => setCloseOutSprintId(null)}
+            onArchive={() => {
+              actions.updateSprint(sprint.id, { status: 'archived' })
+              setCloseOutSprintId(null)
+            }}
+          />
+        )
+      })()}
     </aside>
   )
 }
