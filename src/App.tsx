@@ -10,6 +10,7 @@ import Toolbar from '@/components/Toolbar'
 import KanbanBoard from '@/components/KanbanBoard'
 import ListView from '@/components/ListView'
 import ItemDetail from '@/components/ItemDetail'
+import ContextDocViewer from '@/components/ContextDocViewer'
 import NewItemDialog from '@/components/NewItemDialog'
 import QuickCapture from '@/components/QuickCapture'
 import { seedInitialData } from '@/data/seed'
@@ -70,6 +71,7 @@ export default function App() {
         {state.viewMode === 'board' ? <KanbanBoard /> : <ListView />}
       </div>
       {state.activeItemId && <ItemDetail readOnly={manifestBacked} />}
+      {state.activeDocId && <ContextDocViewer />}
       <NewItemDialog open={showNewItem} onClose={() => setShowNewItem(false)} />
       <QuickCapture open={showQuickCapture} onClose={() => setShowQuickCapture(false)} />
     </div>

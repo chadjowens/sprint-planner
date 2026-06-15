@@ -52,6 +52,7 @@ export interface AppState {
   activeProjectId: string | null
   activeSprintId: string | null
   activeItemId: string | null
+  activeDocId: string | null
   viewMode: ViewMode
   searchQuery: string
   filterPriority: Priority | null

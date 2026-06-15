@@ -214,9 +214,12 @@ export default function Sidebar() {
               {state.contextDocs.map(doc => (
                 <button
                   key={doc.id}
-                  onClick={() => actions.setActiveItem(null)} // TODO: open doc viewer
+                  onClick={() => actions.setActiveDoc(doc.id)}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)]"
-                  style={{ color: 'var(--color-text-secondary)' }}>
+                  style={{
+                    color: state.activeDocId === doc.id ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                    backgroundColor: state.activeDocId === doc.id ? 'var(--color-accent-muted)' : 'transparent',
+                  }}>
                   <FileText size={11} />
                   <span className="truncate">{doc.title}</span>
                 </button>
