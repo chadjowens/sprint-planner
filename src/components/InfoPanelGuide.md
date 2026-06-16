@@ -49,6 +49,26 @@ This board is a **read-only view** of the repository's state. It is not a databa
 2. **The Board:** This UI imports that manifest. If you want to change a priority, edit a description, or move an item, you do not click and drag here. You edit the markdown file in the repository.
 3. **The Status:** The `backlog-status-<slug>.sh` script watches the git log. When a commit lands with a sprint tag (e.g., `[SP1-2]`), the status flips to done.
 
+### Rebuilding the Sprint Board
+
+Because the board is read-only, it must be rebuilt whenever planning docs change.
+
+**When to rebuild:**
+- After creating a new sprint folder
+- After changing priorities, effort estimates, or descriptions in markdown files
+- If the board appears stale or is missing sprints
+
+**How to rebuild:**
+Click the **Rebuild (⟳)** button in the toolbar to see the exact commands, or run:
+```bash
+cd biz-automation-dashboard
+pnpm build:manifest
+git add public/sprints.json
+git commit -m "chore: rebuild sprint manifest"
+git push
+```
+*(Note: After SP2-3 is deployed, this step happens automatically during the Netlify build pipeline.)*
+
 ---
 
 ## The Sprint Lifecycle
