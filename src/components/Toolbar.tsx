@@ -6,10 +6,10 @@ import { useRef, useState } from 'react'
 import { useAppState, useActions, useActiveSprint, useIsManifestBacked } from '@/store/useStore'
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/lib/types'
 import type { Priority, ItemStatus, AppState } from '@/lib/types'
-import { Search, Plus, Download, Upload, RefreshCw, X } from 'lucide-react'
+import { Search, Plus, Download, Upload, RefreshCw, X, Info } from 'lucide-react'
 import { backlogToMarkdown, downloadAsFile } from '@/lib/markdown'
 
-export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
+export default function Toolbar({ onNewItem, onShowInfo }: { onNewItem: () => void, onShowInfo?: () => void }) {
   const state = useAppState()
   const actions = useActions()
   const activeSprint = useActiveSprint()
@@ -129,6 +129,15 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 ml-auto">
+        {/* Guide / Info Panel */}
+        {onShowInfo && (
+          <button onClick={onShowInfo}
+            className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
+            style={{ color: 'var(--color-text-muted)' }}
+            title="System Overview">
+            <Info size={11} /> Guide
+          </button>
+        )}
         {/* Sync from remote manifest */}
         <button onClick={handleSync} disabled={syncing}
           className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
@@ -136,7 +145,6 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
           title="Fetch sprints.json from VITE_MANIFEST_URL">
           <RefreshCw size={11} className={syncing ? 'animate-spin' : ''} /> ↓ Sync
         </button>
-
         {/* Import local file */}
         <button onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
@@ -151,14 +159,12 @@ export default function Toolbar({ onNewItem }: { onNewItem: () => void }) {
           onChange={handleImportFile}
           className="hidden"
         />
-
         <button onClick={handleExportAll}
           className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
           style={{ color: 'var(--color-text-muted)' }}
           title="Export backlog as Markdown">
           <Download size={11} /> Export
         </button>
-
         {/* Hide New Item in manifest-backed mode */}
         {!manifestBacked && (
           <button onClick={onNewItem}
