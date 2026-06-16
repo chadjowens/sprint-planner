@@ -56,5 +56,5 @@ This board is a **read-only view** of the repository's state. It is not a databa
 1. **Setup:** Run `./scripts/sprint-setup.sh <slug>` to provision branches and worktrees.
 2. **Plan:** Build the manifest (`pnpm build:manifest`). Use the Context Viewer to read Graphify and Wiki docs.
 3. **Execute:** Claude Code writes the code. The board updates as commits land.
-4. **QA:** Press `q` to open the Quick Capture panel. Findings are written directly to `docs/backlog/_inbox/` with a `site_area` tag.
-5. **Close:** Click "Close sprint →" to reveal the 10-step checklist (Graphify rebuild, Obsidian sync, worktree cleanup).
+4. **QA:** Press `q` to open the Quick Capture panel. Findings are written directly to `docs/backlog/_inbox/` as GitHub issues.
+5. **Close:** Click "Close sprint →" to reveal the 8-step checklist (Graphify rebuild, worktree cleanup, and merge steps).
