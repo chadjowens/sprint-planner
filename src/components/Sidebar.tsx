@@ -1,23 +1,39 @@
 /*
   DESIGN: Terminal Aesthetic — Sidebar Navigation
-  Narrow left panel with project tree, sprint list, and context docs.
+  Narrow left panel with project tree, sprint list grouped by feature track, and context docs.
   JetBrains Mono, flat borders, monospace labels.
+
+  Track grouping: sprints with a `track` field are grouped under collapsible
+  feature-track folders that mirror docs/sprints/ in biz-automation-dashboard.
+  Sprints without a track fall into an "Other" group at the bottom.
 */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAppState, useActions, useIsManifestBacked } from '@/store/useStore'
-import { ChevronDown, ChevronRight, Plus, FolderOpen, Zap, FileText, LayoutGrid, List, Trash2, Settings, ArrowRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, FolderOpen, Folder, Zap, FileText, LayoutGrid, List, ArrowRight } from 'lucide-react'
 import type { Sprint } from '@/lib/types'
 import SprintCloseOut from '@/components/SprintCloseOut'
+
+// Format a track slug into a readable label
+// e.g. "email-nurture" -> "Email Nurture", "infrastructure-ops" -> "Infrastructure Ops"
+function formatTrackLabel(track: string): string {
+  return track
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
 
 export default function Sidebar() {
   const state = useAppState()
   const actions = useActions()
   const manifestBacked = useIsManifestBacked()
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     sprints: true,
     backlog: true,
     docs: false,
   })
+  // Track-level expand state — all tracks start expanded
+  const [expandedTracks, setExpandedTracks] = useState<Record<string, boolean>>({})
   const [showNewSprint, setShowNewSprint] = useState(false)
   const [newSprintName, setNewSprintName] = useState('')
   const [closeOutSprintId, setCloseOutSprintId] = useState<string | null>(null)
@@ -26,10 +42,33 @@ export default function Sidebar() {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  const toggleTrack = (track: string) => {
+    setExpandedTracks(prev => ({ ...prev, [track]: prev[track] === false ? true : false }))
+  }
+
+  const isTrackExpanded = (track: string) => expandedTracks[track] !== false
+
   const activeProject = state.projects.find(p => p.id === state.activeProjectId)
   const projectSprints = state.sprints
   const backlogCount = state.items.filter(i => i.sprint_id === null).length
   const docsCount = state.contextDocs.length
+
+  // Group sprints by track, preserving order
+  const trackGroups = useMemo(() => {
+    const groups = new Map<string, Sprint[]>()
+    for (const sprint of projectSprints) {
+      const key = sprint.track || '__other__'
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(sprint)
+    }
+    // Sort tracks alphabetically, with __other__ last
+    const sorted = [...groups.entries()].sort(([a], [b]) => {
+      if (a === '__other__') return 1
+      if (b === '__other__') return -1
+      return a.localeCompare(b)
+    })
+    return sorted
+  }, [projectSprints])
 
   const handleCreateSprint = () => {
     if (!newSprintName.trim()) return
@@ -42,6 +81,43 @@ export default function Sidebar() {
     const items = state.items.filter(i => i.sprint_id === sprint.id)
     const done = items.filter(i => i.status === 'done').length
     return { total: items.length, done }
+  }
+
+  const renderSprint = (sprint: Sprint, indent = false) => {
+    const counts = getSprintItemCounts(sprint)
+    const isActive = state.activeSprintId === sprint.id
+    return (
+      <div key={sprint.id}>
+        <button
+          onClick={() => actions.setActiveSprint(sprint.id)}
+          className="w-full flex items-center gap-2 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)] group"
+          style={{
+            paddingLeft: indent ? '2rem' : '0.75rem',
+            paddingRight: '0.75rem',
+            color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            backgroundColor: isActive ? 'var(--color-accent-muted)' : 'transparent',
+          }}>
+          <Zap size={11} style={{
+            flexShrink: 0,
+            color: sprint.status === 'active' ? 'var(--color-warning)' :
+                   sprint.status === 'completed' ? 'var(--color-success)' : 'var(--color-text-muted)'
+          }} />
+          <span className="truncate">{sprint.name}</span>
+          <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+            {counts.done}/{counts.total}
+          </span>
+        </button>
+        {sprint.status === 'completed' && (
+          <button
+            onClick={() => setCloseOutSprintId(sprint.id)}
+            className="w-full flex items-center gap-1 pr-3 py-1 text-[10px] transition-colors hover:bg-[var(--color-surface-hover)]"
+            style={{ paddingLeft: indent ? '3rem' : '2rem', color: 'var(--color-success)' }}>
+            <ArrowRight size={9} />
+            Close sprint
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -143,44 +219,51 @@ export default function Sidebar() {
                 </div>
               )}
 
-              {projectSprints.map(sprint => {
-                const counts = getSprintItemCounts(sprint)
-                const isActive = state.activeSprintId === sprint.id
-                return (
-                  <div key={sprint.id}>
-                    <button
-                      onClick={() => actions.setActiveSprint(sprint.id)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)] group"
-                      style={{
-                        color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                        backgroundColor: isActive ? 'var(--color-accent-muted)' : 'transparent',
-                      }}>
-                      <Zap size={11} style={{
-                        color: sprint.status === 'active' ? 'var(--color-warning)' :
-                               sprint.status === 'completed' ? 'var(--color-success)' : 'var(--color-text-muted)'
-                      }} />
-                      <span className="truncate">{sprint.name}</span>
-                      <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
-                        {counts.done}/{counts.total}
-                      </span>
-                    </button>
-                    {sprint.status === 'completed' && (
+              {/* Track-grouped sprint tree */}
+              {trackGroups.length > 0 ? (
+                trackGroups.map(([track, sprints]) => {
+                  const trackLabel = track === '__other__' ? 'Other' : formatTrackLabel(track)
+                  const expanded = isTrackExpanded(track)
+                  const trackSprintCount = sprints.length
+                  const trackDoneCount = sprints.reduce((acc, s) => {
+                    return acc + state.items.filter(i => i.sprint_id === s.id && i.status === 'done').length
+                  }, 0)
+                  const trackTotalCount = sprints.reduce((acc, s) => {
+                    return acc + state.items.filter(i => i.sprint_id === s.id).length
+                  }, 0)
+
+                  return (
+                    <div key={track}>
+                      {/* Track folder header */}
                       <button
-                        onClick={() => setCloseOutSprintId(sprint.id)}
-                        className="w-full flex items-center gap-1 pl-8 pr-3 py-1 text-[10px] transition-colors hover:bg-[var(--color-surface-hover)]"
-                        style={{ color: 'var(--color-success)' }}>
-                        <ArrowRight size={9} />
-                        Close sprint
+                        onClick={() => toggleTrack(track)}
+                        className="w-full flex items-center gap-1.5 px-3 py-1 text-[10px] font-medium transition-colors hover:bg-[var(--color-surface-hover)]"
+                        style={{ color: 'var(--color-text-secondary)' }}>
+                        {expanded ? <ChevronDown size={9} /> : <ChevronRight size={9} />}
+                        {expanded
+                          ? <FolderOpen size={10} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                          : <Folder size={10} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                        }
+                        <span className="truncate">{trackLabel}</span>
+                        <span className="ml-auto text-[10px] whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+                          {trackSprintCount}
+                          {trackTotalCount > 0 && (
+                            <span className="ml-1">· {trackDoneCount}/{trackTotalCount}</span>
+                          )}
+                        </span>
                       </button>
-                    )}
+
+                      {/* Sprint entries under this track */}
+                      {expanded && sprints.map(sprint => renderSprint(sprint, true))}
+                    </div>
+                  )
+                })
+              ) : (
+                !showNewSprint && (
+                  <div className="px-3 py-2 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                    No sprints yet
                   </div>
                 )
-              })}
-
-              {projectSprints.length === 0 && !showNewSprint && (
-                <div className="px-3 py-2 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                  No sprints yet
-                </div>
               )}
             </div>
           )}

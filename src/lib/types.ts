@@ -26,6 +26,7 @@ export interface Sprint {
   end_date?: string
   status: 'planning' | 'active' | 'completed' | 'archived'
   created_at: string
+  track?: string
 }
 
 export interface Project {
