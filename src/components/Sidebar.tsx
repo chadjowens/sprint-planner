@@ -279,6 +279,31 @@ export default function Sidebar() {
             Unassigned
             <span className="ml-auto text-[10px]">{backlogCount}</span>
           </button>
+          {expandedSections.backlog && (
+            <div>
+              {state.items
+                .filter(i => i.sprint_id === null)
+                .map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => actions.setActiveItem(item.id)}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-hover)]"
+                    style={{
+                      color: state.activeItemId === item.id ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                      backgroundColor: state.activeItemId === item.id ? 'var(--color-accent-muted)' : 'transparent',
+                    }}>
+                    <span className="text-[10px] font-mono shrink-0" style={{ color: 'var(--color-text-muted)' }}>{item.id}</span>
+                    <span className="truncate">{item.title}</span>
+                  </button>
+                ))
+              }
+              {backlogCount === 0 && (
+                <div className="px-3 py-2 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                  No unassigned items
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Context Docs Section */}
