@@ -2,11 +2,11 @@
   DESIGN: Terminal Aesthetic — Toolbar
   Top bar with search, priority/status filters, and action buttons.
 */
-import { useRef, useState } from 'react'
-import { useAppState, useActions, useActiveSprint, useIsManifestBacked } from '@/store/useStore'
+import { useRef, useState, useEffect } from 'react'
+import { useAppState, useActions, useActiveSprint, useIsManifestBacked, useGeneratedAt } from '@/store/useStore'
 import { PRIORITY_CONFIG, STATUS_CONFIG } from '@/lib/types'
 import type { Priority, ItemStatus, AppState } from '@/lib/types'
-import { Search, Plus, Download, Upload, RefreshCw, X, Info } from 'lucide-react'
+import { Search, Plus, Download, Upload, RefreshCw, X, Info, RotateCw, Copy, Check } from 'lucide-react'
 import { backlogToMarkdown, downloadAsFile } from '@/lib/markdown'
 
 export default function Toolbar({ onNewItem, onShowInfo }: { onNewItem: () => void, onShowInfo?: () => void }) {
@@ -14,8 +14,47 @@ export default function Toolbar({ onNewItem, onShowInfo }: { onNewItem: () => vo
   const actions = useActions()
   const activeSprint = useActiveSprint()
   const manifestBacked = useIsManifestBacked()
+  const generatedAt = useGeneratedAt()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const rebuildRef = useRef<HTMLDivElement>(null)
   const [syncing, setSyncing] = useState(false)
+  const [showRebuild, setShowRebuild] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // Close rebuild popover on outside click
+  useEffect(() => {
+    if (!showRebuild) return
+    const handleClick = (e: MouseEvent) => {
+      if (rebuildRef.current && !rebuildRef.current.contains(e.target as Node)) {
+        setShowRebuild(false)
+      }
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowRebuild(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [showRebuild])
+
+  const handleCopyCommand = async () => {
+    await navigator.clipboard.writeText('pnpm build:manifest')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  const formatGeneratedAt = (iso: string): string => {
+    try {
+      const d = new Date(iso)
+      if (isNaN(d.getTime())) return 'unknown'
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return 'unknown'
+    }
+  }
 
   const handleExportAll = () => {
     const md = backlogToMarkdown(state.items, state.sprints)
@@ -129,6 +168,40 @@ export default function Toolbar({ onNewItem, onShowInfo }: { onNewItem: () => vo
 
       {/* Actions */}
       <div className="flex items-center gap-1 ml-auto">
+        {/* Manifest synced indicator + Rebuild popover */}
+        <span className="text-[10px] mr-1" style={{ color: 'var(--color-text-muted)' }}>
+          Manifest{generatedAt ? ` synced: ${formatGeneratedAt(generatedAt)}` : ': unknown'}
+        </span>
+        <div className="relative" ref={rebuildRef}>
+          <button
+            onClick={() => setShowRebuild(prev => !prev)}
+            className="flex items-center text-[10px] p-1 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
+            style={{ color: 'var(--color-text-muted)' }}
+            title="Rebuild manifest">
+            <RotateCw size={11} />
+          </button>
+          {showRebuild && (
+            <div className="absolute right-0 top-full mt-1 w-56 rounded border p-3 shadow-lg z-50"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+              <p className="text-[10px] mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                Run in <code style={{ color: 'var(--color-accent)' }}>biz-automation-dashboard</code>:
+              </p>
+              <div className="flex items-center gap-1.5 rounded px-2 py-1.5"
+                style={{ backgroundColor: 'var(--color-base)' }}>
+                <code className="flex-1 text-[11px]" style={{ color: 'var(--color-text-primary)' }}>
+                  pnpm build:manifest
+                </code>
+                <button onClick={handleCopyCommand}
+                  className="p-0.5 rounded transition-colors hover:bg-[var(--color-surface-hover)]"
+                  style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+                  title="Copy command">
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Guide / Info Panel */}
         {onShowInfo && (
           <button onClick={onShowInfo}

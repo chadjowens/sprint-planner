@@ -67,7 +67,31 @@ git add public/sprints.json
 git commit -m "chore: rebuild sprint manifest"
 git push
 ```
-*(Note: After SP2-3 is deployed, this step happens automatically during the Netlify build pipeline.)*
+---
+
+## CI / Deploy: Automatic Manifest Builds
+
+You do **not** need to rebuild the manifest manually for production. The `pnpm build:manifest` step runs automatically in CI on every deploy. When code is pushed to `main` in `biz-automation-dashboard`, the Netlify build pipeline regenerates `sprints.json` (including a top-level `generatedAt` timestamp) and deploys it alongside the app.
+
+This means the deployed Sprint Board is always up-to-date — any markdown changes merged to `main` are reflected on the next deploy without manual intervention.
+
+The toolbar shows **"Manifest synced: HH:MM"** using the `generatedAt` timestamp from the loaded manifest. If the timestamp is missing (e.g., local-only data), it shows **"Manifest: unknown"**.
+
+---
+
+## Local Development
+
+To preview changes to sprint docs locally before pushing:
+
+1. Edit markdown files in `biz-automation-dashboard/docs/sprints/`.
+2. Run the manifest builder:
+   ```bash
+   cd biz-automation-dashboard
+   pnpm build:manifest
+   ```
+3. Copy or symlink the generated `public/sprints.json` into the sprint-planner's `public/` directory, or use the **↑ Import** button in the toolbar to load it directly.
+
+> **Tip:** Click the **⟳** button in the toolbar to see the exact rebuild command and copy it to your clipboard.
 
 ---
 

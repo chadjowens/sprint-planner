@@ -58,6 +58,7 @@ export interface AppState {
   filterPriority: Priority | null
   filterStatus: ItemStatus | null
   manifestBacked: boolean
+  generatedAt?: string
 }
 
 export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string }> = {
