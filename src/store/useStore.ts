@@ -77,6 +77,11 @@ export function useIsManifestBacked(): boolean {
   return s.manifestBacked
 }
 
+export function useGeneratedAt(): string | undefined {
+  const s = useAppState()
+  return s.generatedAt
+}
+
 export function useActiveDoc(): ContextDoc | null {
   const s = useAppState()
   return s.contextDocs.find(d => d.id === s.activeDocId) ?? null
